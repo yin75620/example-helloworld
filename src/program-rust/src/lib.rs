@@ -9,6 +9,7 @@ where
     hasher.finish()
 }
 
+
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -17,6 +18,9 @@ use solana_program::{
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
+    sysvar::{
+        clock::Clock, slot_hashes::SlotHashes, Sysvar,
+    },
 };
 
 
@@ -50,6 +54,28 @@ pub fn process_instruction(
         return Err(ProgramError::IncorrectProgramId);
     }
 
+    // Get the time account
+    let sysvar_clock_pub_key = next_account_info(accounts_iter)?;
+
+    if sysvar_clock_pub_key.key.to_string() != "SysvarC1ock11111111111111111111111111111111" {
+        msg!("sysvarClockPubkey account does not have the correct program id");
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    for a in 0..2 {
+        let temp = Clock::from_account_info(sysvar_clock_pub_key)?;
+        let current_slot = temp.slot;
+        
+
+        let epoch_start_timestamp = temp.epoch_start_timestamp;
+        let epoch = temp.epoch;
+        let leader_schedule_epoch = temp.leader_schedule_epoch;
+        let unix_timestamp = temp.unix_timestamp;
+        msg!("{}, current_slot:{}, epoch_start_timestamp:{}, epoch:{}, leader_schedule_epoch:{}, unix_timestamp:{}",
+         a, current_slot, epoch_start_timestamp, epoch, leader_schedule_epoch, unix_timestamp);
+
+        msg!("slot_hash:{}", hash_value(current_slot));
+    }
 
     // Increment and store the number of times the account has been greeted
     for x in 0..1 {

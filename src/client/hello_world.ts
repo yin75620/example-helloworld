@@ -123,7 +123,7 @@ export async function establishPayer(): Promise<void> {
       payerAccount = await newAccountWithLamports(connection, fees);
     }
   }
-
+  
   const lamports = await connection.getBalance(payerAccount.publicKey);
   if (lamports < fees) {
     // This should only happen when using cli config keypair
@@ -218,8 +218,11 @@ export async function checkProgram(): Promise<void> {
  */
 export async function sayHello(): Promise<void> {
   console.log('Saying hello to', greetedPubkey.toBase58());
+  let sysvarClockPubKey = new PublicKey('SysvarC1ock11111111111111111111111111111111');
   const instruction = new TransactionInstruction({
-    keys: [{pubkey: greetedPubkey, isSigner: false, isWritable: true}],
+    keys: [{pubkey: greetedPubkey, isSigner: false, isWritable: true},
+      {pubkey: sysvarClockPubKey, isSigner: false, isWritable: false},
+    ],
     programId,
     data: Buffer.alloc(0), // All instructions are hellos
   });
