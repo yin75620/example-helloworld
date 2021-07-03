@@ -59,7 +59,9 @@ const PROGRAM_SO_PATH = path.join(PROGRAM_PATH, 'helloworld.so');
  * Path to the keypair of the deployed program.
  * This file is created when running `solana program deploy dist/program/helloworld.so`
  */
-const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'helloworld-keypair.json');
+//const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'helloworld-keypair.json');
+const PROGRAM_RUST_PATH = path.resolve(__dirname, '../../src/program-rust/target/deploy')
+const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_RUST_PATH, 'helloworld-keypair.json');
 
 /**
  * The state of a greeting account managed by the hello world program
@@ -111,6 +113,7 @@ export async function establishPayer(): Promise<void> {
 
     // Calculate the cost of sending transactions
     fees += feeCalculator.lamportsPerSignature * 100; // wag
+    console.log("fees:", fees);
 
     try {
       // Get payer from cli config
@@ -148,6 +151,10 @@ export async function checkProgram(): Promise<void> {
   try {
     const programAccount = await readAccountFromFile(PROGRAM_KEYPAIR_PATH);
     programId = programAccount.publicKey;
+    console.log("programId:", programId.toBase58())
+
+    var programId2 = new PublicKey(programId.toBase58());
+    console.log("programId2:",programId2.toBase58());
   } catch (err) {
     const errMsg = (err as Error).message;
     throw new Error(
@@ -177,6 +184,7 @@ export async function checkProgram(): Promise<void> {
     GREETING_SEED,
     programId,
   );
+  console.log(`jtest$ payerAccount.publicKey ${payerAccount.publicKey.toBase58()}`);
 
   // Check if the greeting account has already been created
   const greetedAccount = await connection.getAccountInfo(greetedPubkey);

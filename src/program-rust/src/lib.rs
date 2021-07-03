@@ -1,3 +1,14 @@
+use std::hash::{Hash as StdHash, Hasher};
+use std::collections::hash_map::DefaultHasher;
+fn hash_value<T>(obj: T) -> u64
+where
+    T: StdHash,
+{
+    let mut hasher = DefaultHasher::new();
+    obj.hash(&mut hasher);
+    hasher.finish()
+}
+
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -7,6 +18,7 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
 };
+
 
 /// Define the type of state stored in accounts
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
@@ -38,12 +50,24 @@ pub fn process_instruction(
         return Err(ProgramError::IncorrectProgramId);
     }
 
-    // Increment and store the number of times the account has been greeted
-    let mut greeting_account = GreetingAccount::try_from_slice(&account.data.borrow())?;
-    greeting_account.counter += 1;
-    greeting_account.serialize(&mut &mut account.data.borrow_mut()[..])?;
 
-    msg!("Greeted {} time(s)!", greeting_account.counter);
+    // Increment and store the number of times the account has been greeted
+    for x in 0..1 {
+        msg!("{}", x); // x: i32
+        msg!("{}", hash_value(x-1));
+        msg!("{}", hash_value("A"));
+        
+
+        //msg!("{:?}", str::from_utf8(&buf));
+        
+    
+        let mut greeting_account = GreetingAccount::try_from_slice(&account.data.borrow())?;
+        greeting_account.counter += 1;
+        greeting_account.serialize(&mut &mut account.data.borrow_mut()[..])?;
+        msg!("Greeted {} time(s)!", greeting_account.counter);
+    }
+    
+    
 
     Ok(())
 }
