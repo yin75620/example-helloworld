@@ -6,6 +6,7 @@ import {
   establishConnection,
   establishPayer,
   checkProgram,
+  sendMoney,
   sayHello,
   reportGreetings,
 } from './hello_world';
@@ -21,6 +22,8 @@ async function main() {
 
   // Check if the program has been deployed
   await checkProgram();
+
+  //await sendMoney();
 
   // Say hello to an account
   await sayHello();

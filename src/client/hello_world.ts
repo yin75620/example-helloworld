@@ -213,23 +213,79 @@ export async function checkProgram(): Promise<void> {
   }
 }
 
+export async function sendMoney(): Promise<void> {
+     // Send game funds
+     var amount = 0.01
+     console.log("Amount:" + amount)
+     console.log("Sending to greetedPubkey: ");
+     console.log(greetedPubkey.toBase58());
+     const transaction = new Transaction().add(SystemProgram.transfer({
+         fromPubkey: payerAccount.publicKey,
+         toPubkey: greetedPubkey,
+         lamports: amount * LAMPORTS_PER_SOL,
+     }));
+
+     await sendAndConfirmTransaction(
+      connection,
+      transaction,
+      [payerAccount],
+    );
+}
+
 /**
  * Say hello
  */
 export async function sayHello(): Promise<void> {
   console.log('Saying hello to', greetedPubkey.toBase58());
   let sysvarClockPubKey = new PublicKey('SysvarC1ock11111111111111111111111111111111');
+  let token_address = new PublicKey('xxVzGsfDVaQvd5eTkCuyJFaAhTzDNAXnW49r5kNLKKN');
+  //let authorityAccount = new PublicKey('8kTX4Q4itv5hwTsMUkPjVF7ECDVxSCNssSHNGtfbb9Pn'); //
+  let authorityAccount = new PublicKey('5g66nv9DQMRpxJeouFGr1497g4jVdnXeLowawzbkXxjb'); //
+  let programTokenAccount = new PublicKey('69aSHjgpnP8w1JtdupamzVwM9Rjx1kKq69JCMxFCut6V')
+  let userAccount = await readAccountFromFile("/Users/jeffyin/breakthrough/solana/example-helloworld/keys/1a11oX3ak4hmeLrmaoaZdLY911hKHYjEYXxPd9LobVS.json");
+  let userTokenAccount = new PublicKey('Aw34RrJ4vJ966Rgbya7ehSX2LoS2ueMCmGDZ7DztDrcq');
+  console.log("userPubKey:", userAccount.publicKey.toBase58());
+  //let fundPubkey = payerAccount.publicKey;
   const instruction = new TransactionInstruction({
     keys: [{pubkey: greetedPubkey, isSigner: false, isWritable: true},
       {pubkey: sysvarClockPubKey, isSigner: false, isWritable: false},
+      {pubkey: userAccount.publicKey, isSigner: true, isWritable: true},
+      {pubkey: payerAccount.publicKey, isSigner: true, isWritable: true},
+      {pubkey: token_address, isSigner: false, isWritable: false},
+      {pubkey: authorityAccount, isSigner:false, isWritable:false},
+      {pubkey: programTokenAccount, isSigner:false, isWritable:false},
+      {pubkey: userTokenAccount, isSigner:false, isWritable:false},
     ],
     programId,
     data: Buffer.alloc(0), // All instructions are hellos
   });
+
+  var tx = new Transaction();
+  tx.add(SystemProgram.transfer({
+    fromPubkey: payerAccount.publicKey,
+    toPubkey: greetedPubkey,
+    lamports: 0.01 * LAMPORTS_PER_SOL,
+  }));
+  tx.add(instruction);
+  tx.recentBlockhash = (
+    await connection.getRecentBlockhash("max")
+  ).blockhash;
+  tx.feePayer = payerAccount.publicKey;
+
+  tx.sign(userAccount,payerAccount);
+  //tx.sign(userAccount,payerAccount);
+
+  const acc = "vFj/mjPXxWxMoVxwBpRfHKufaxK0RYy3Gd2rAmKlveF7oiinGDnsXlRSbXieC5x6prka4aQGE8tFRz17zLl38w==";
+  const treasuryAccount = new Account(Buffer.from(acc, "base64"));
+  console.log("jtest$ treasury:", treasuryAccount.publicKey.toBase58());
+  
+  
+
+  
   await sendAndConfirmTransaction(
     connection,
-    new Transaction().add(instruction),
-    [payerAccount],
+    tx,
+    [payerAccount,userAccount],
   );
 }
 
