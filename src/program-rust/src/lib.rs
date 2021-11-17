@@ -29,6 +29,7 @@ use solana_program::{
 pub struct GreetingAccount {
     /// number of greetings
     pub counter: u32,
+    pub randnum: u32,
 }
 
 // Declare and export the program's entrypoint
@@ -62,6 +63,8 @@ pub fn process_instruction(
         return Err(ProgramError::InvalidAccountData);
     }
 
+    let mut randnum = 0;
+
     for a in 0..2 {
         let temp = Clock::from_account_info(sysvar_clock_pub_key)?;
         let current_slot = temp.slot;
@@ -74,7 +77,9 @@ pub fn process_instruction(
         msg!("{}, current_slot:{}, epoch_start_timestamp:{}, epoch:{}, leader_schedule_epoch:{}, unix_timestamp:{}",
          a, current_slot, epoch_start_timestamp, epoch, leader_schedule_epoch, unix_timestamp);
 
-        msg!("slot_hash:{}", hash_value(current_slot));
+        let v = hash_value(current_slot);
+        msg!("slot_hash:{}", v );
+        randnum = v as u32;
     }
 
     // Increment and store the number of times the account has been greeted
@@ -89,6 +94,7 @@ pub fn process_instruction(
     
         let mut greeting_account = GreetingAccount::try_from_slice(&account.data.borrow())?;
         greeting_account.counter += 1;
+        greeting_account.randnum = randnum;
         greeting_account.serialize(&mut &mut account.data.borrow_mut()[..])?;
         msg!("Greeted {} time(s)!", greeting_account.counter);
     }

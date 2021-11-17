@@ -59,18 +59,20 @@ const PROGRAM_SO_PATH = path.join(PROGRAM_PATH, 'helloworld.so');
  * Path to the keypair of the deployed program.
  * This file is created when running `solana program deploy dist/program/helloworld.so`
  */
-//const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'helloworld-keypair.json');
-const PROGRAM_RUST_PATH = path.resolve(__dirname, '../../src/program-rust/target/deploy')
-const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_RUST_PATH, 'helloworld-keypair.json');
+const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'helloworld-keypair.json');
+//const PROGRAM_RUST_PATH = path.resolve(__dirname, '../../src/program-rust/target/deploy')
+//const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_RUST_PATH, 'helloworld-keypair.json');
 
 /**
  * The state of a greeting account managed by the hello world program
  */
 class GreetingAccount {
   counter = 0;
-  constructor(fields: {counter: number} | undefined = undefined) {
+  randnum = 0;
+  constructor(fields: {counter: number, randnum: number} | undefined = undefined) {
     if (fields) {
       this.counter = fields.counter;
+      this.randnum = fields.randnum;
     }
   }
 }
@@ -79,7 +81,7 @@ class GreetingAccount {
  * Borsh schema definition for greeting accounts
  */
 const GreetingSchema = new Map([
-  [GreetingAccount, {kind: 'struct', fields: [['counter', 'u32']]}],
+  [GreetingAccount, {kind: 'struct', fields: [['counter', 'u32'],['randnum', 'u32']]}],
 ]);
 
 /**
@@ -251,5 +253,7 @@ export async function reportGreetings(): Promise<void> {
     'has been greeted',
     greeting.counter,
     'time(s)',
+    'Random Number:',
+    greeting.randnum,
   );
 }
