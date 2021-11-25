@@ -16,7 +16,8 @@ no-entrypoint = []
 borsh = "0.7.1"
 borsh-derive = "0.8.1"
 solana-program = "=1.6.7"
-spl-token = "3.1.1"
+#spl-token = "3.1.1"
+spl-token = { version = "3.0.0", features = ["no-entrypoint"] }
 getrandom = { version = "0.2.2", features = ["custom"] }
 
 [dev-dependencies]

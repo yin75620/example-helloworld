@@ -215,23 +215,139 @@ export async function checkProgram(): Promise<void> {
   }
 }
 
+export async function sendMoney(): Promise<void> {
+     // Send game funds
+     var amount = 0.01
+     console.log("Amount:" + amount)
+     console.log("Sending to greetedPubkey: ");
+     console.log(greetedPubkey.toBase58());
+     const transaction = new Transaction().add(SystemProgram.transfer({
+         fromPubkey: payerAccount.publicKey,
+         toPubkey: greetedPubkey,
+         lamports: amount * LAMPORTS_PER_SOL,
+     }));
+
+     await sendAndConfirmTransaction(
+      connection,
+      transaction,
+      [payerAccount],
+    );
+}
+
+import * as web3 from "@solana/web3.js";
+import * as splToken from "@solana/spl-token";
+
+export async function sendToken(): Promise<void> {
+  //(async () => {
+    // Connect to cluster
+    var connection = new web3.Connection(web3.clusterApiUrl("devnet"));
+    // Construct wallet keypairs
+    //var payerAccount = await getPayer();
+    let senderAccount = await readAccountFromFile("/Users/jeffyin/breakthrough/solana/example-helloworld/keys/1a11oX3ak4hmeLrmaoaZdLY911hKHYjEYXxPd9LobVS.json");
+    console.time("Hi");
+    var fromWallet = senderAccount; //web3.Keypair.fromSecretKey(DEMO_WALLET_SECRET_KEY);
+
+    //var toWallet = web3.Keypair.generate();
+    var toWalletPublickKey = new PublicKey("2acs4mPoLyweRu1ANC1st9Rd2G3EheA7G4Cr5rLiq3G1");
+
+    // Construct my token class
+    var myMint = new web3.PublicKey("xxVzGsfDVaQvd5eTkCuyJFaAhTzDNAXnW49r5kNLKKN");//("My Mint Public Address");
+    var myToken = new splToken.Token(
+      connection,
+      myMint,
+      splToken.TOKEN_PROGRAM_ID,
+      fromWallet
+    );
+    console.timeLog("Hi");
+    // Create associated token accounts for my token if they don't exist yet
+    var fromTokenAccount = await myToken.getOrCreateAssociatedAccountInfo(
+      fromWallet.publicKey
+    )
+    var toTokenAccount = await myToken.getOrCreateAssociatedAccountInfo(
+      //toWallet.publicKey
+      toWalletPublickKey
+    )
+    console.timeLog("Hi");
+    // Add token transfer instructions to transaction
+    var transaction = new web3.Transaction()
+      .add(
+        splToken.Token.createTransferInstruction(
+          splToken.TOKEN_PROGRAM_ID,
+          fromTokenAccount.address,
+          toTokenAccount.address,
+          fromWallet.publicKey,
+          [],
+          10 //amount
+        )
+      );
+    // Sign transaction, broadcast, and confirm
+    var signature = await web3.sendAndConfirmTransaction(
+      connection,
+      transaction,
+      [fromWallet]
+    );
+
+    console.timeEnd("Hi");
+    
+    console.log("SIGNATURE", signature);
+    console.log("SUCCESS");
+  //})();
+}
+
 /**
  * Say hello
  */
 export async function sayHello(): Promise<void> {
   console.log('Saying hello to', greetedPubkey.toBase58());
   let sysvarClockPubKey = new PublicKey('SysvarC1ock11111111111111111111111111111111');
+  let token_address = new PublicKey('xxVzGsfDVaQvd5eTkCuyJFaAhTzDNAXnW49r5kNLKKN');
+  //let authorityAccount = new PublicKey('8kTX4Q4itv5hwTsMUkPjVF7ECDVxSCNssSHNGtfbb9Pn'); //
+  let authorityAccount = new PublicKey('5g66nv9DQMRpxJeouFGr1497g4jVdnXeLowawzbkXxjb'); //
+  let programTokenAccount = new PublicKey('69aSHjgpnP8w1JtdupamzVwM9Rjx1kKq69JCMxFCut6V')
+  let userAccount = await readAccountFromFile("/Users/jeffyin/breakthrough/solana/example-helloworld/keys/1a11oX3ak4hmeLrmaoaZdLY911hKHYjEYXxPd9LobVS.json");
+  let userTokenAccount = new PublicKey('Aw34RrJ4vJ966Rgbya7ehSX2LoS2ueMCmGDZ7DztDrcq');
+  console.log("userPubKey:", userAccount.publicKey.toBase58());
+  //let fundPubkey = payerAccount.publicKey;
   const instruction = new TransactionInstruction({
     keys: [{pubkey: greetedPubkey, isSigner: false, isWritable: true},
       {pubkey: sysvarClockPubKey, isSigner: false, isWritable: false},
+      {pubkey: userAccount.publicKey, isSigner: true, isWritable: true},
+      {pubkey: payerAccount.publicKey, isSigner: true, isWritable: true},
+      {pubkey: token_address, isSigner: false, isWritable: false},
+      {pubkey: authorityAccount, isSigner:false, isWritable:false},
+      {pubkey: programTokenAccount, isSigner:false, isWritable:false},
+      {pubkey: userTokenAccount, isSigner:false, isWritable:false},
     ],
     programId,
     data: Buffer.alloc(0), // All instructions are hellos
   });
+
+  var tx = new Transaction();
+  tx.add(SystemProgram.transfer({
+    fromPubkey: payerAccount.publicKey,
+    toPubkey: greetedPubkey,
+    lamports: 0.01 * LAMPORTS_PER_SOL,
+  }));
+  tx.add(instruction);
+  tx.recentBlockhash = (
+    await connection.getRecentBlockhash("max")
+  ).blockhash;
+  tx.feePayer = payerAccount.publicKey;
+
+  tx.sign(userAccount,payerAccount);
+  //tx.sign(userAccount,payerAccount);
+
+  const acc = "vFj/mjPXxWxMoVxwBpRfHKufaxK0RYy3Gd2rAmKlveF7oiinGDnsXlRSbXieC5x6prka4aQGE8tFRz17zLl38w==";
+  const treasuryAccount = new Account(Buffer.from(acc, "base64"));
+  console.log("jtest$ treasury:", treasuryAccount.publicKey.toBase58());
+  
+  
+
+  
   await sendAndConfirmTransaction(
     connection,
-    new Transaction().add(instruction),
-    [payerAccount],
+    tx,
+    [payerAccount,userAccount],
   );
 }
 
