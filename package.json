@@ -26,6 +26,7 @@
   "dependencies": {
     "@solana/spl-token": "^0.1.8",
     "@solana/web3.js": "^1.7.0",
+    "buffer-layout": "^1.2.0",
     "borsh": "^0.4.0",
     "mz": "^2.7.0",
     "yaml": "^1.10.2"
