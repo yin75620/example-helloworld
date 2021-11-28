@@ -14,6 +14,8 @@ import {
 import fs from 'mz/fs';
 import path from 'path';
 import * as borsh from 'borsh';
+import * as BufferLayout from '@solana/buffer-layout';
+
 
 import {
   getPayer,
@@ -60,6 +62,7 @@ const PROGRAM_SO_PATH = path.join(PROGRAM_PATH, 'helloworld.so');
  * This file is created when running `solana program deploy dist/program/helloworld.so`
  */
 const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'helloworld-keypair.json');
+const ACCOUNT1_PATH = "/Users/jeffyin/breakthrough/solana/example-helloworld/keys/1a11oX3ak4hmeLrmaoaZdLY911hKHYjEYXxPd9LobVS.json"; 
 //const PROGRAM_RUST_PATH = path.resolve(__dirname, '../../src/program-rust/target/deploy')
 //const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_RUST_PATH, 'helloworld-keypair.json');
 
@@ -91,6 +94,30 @@ const GREETING_SIZE = borsh.serialize(
   GreetingSchema,
   new GreetingAccount(),
 ).length;
+
+
+class EnterData {
+  instration = 0;
+  constructor(fields: {instration: number} | undefined = undefined) {
+    if (fields) {
+      this.instration = fields.instration;
+    }
+  }
+}
+/**
+ * Borsh schema definition for greeting accounts
+ */
+ const EnterSchema = new Map([
+  [EnterData, {kind: 'struct', fields: [['instration', 'u8']]}],
+]);
+/**
+ * The expected size of each greeting account.
+ */
+ const ENTER_DATA_SIZE = borsh.serialize(
+  EnterSchema,
+  new EnterData(),
+).length;
+
 
 /**
  * Establish a connection to the cluster
@@ -243,7 +270,7 @@ export async function sendToken(): Promise<void> {
     var connection = new web3.Connection(web3.clusterApiUrl("devnet"));
     // Construct wallet keypairs
     //var payerAccount = await getPayer();
-    let senderAccount = await readAccountFromFile("/Users/jeffyin/breakthrough/solana/example-helloworld/keys/1a11oX3ak4hmeLrmaoaZdLY911hKHYjEYXxPd9LobVS.json");
+    let senderAccount = await readAccountFromFile(ACCOUNT1_PATH);
     console.time("Hi");
     var fromWallet = senderAccount; //web3.Keypair.fromSecretKey(DEMO_WALLET_SECRET_KEY);
 
@@ -295,6 +322,120 @@ export async function sendToken(): Promise<void> {
   //})();
 }
 
+export async function createTokenATA(): Promise<void>{
+  let programAccount = await readAccountFromFile(PROGRAM_KEYPAIR_PATH); 
+  // Main Address 7ya4jC952z5m3bZdCNTL6BbLVTquGzr3S4CXZtkKBXMt
+  // xx Token Address CPr4F3m3GpHKJSr7FUEBUuXZCrDZUBBW1uYpo5pmBvTL
+  
+  
+  var connection = new web3.Connection(web3.clusterApiUrl("devnet"));
+  // Construct wallet keypairs
+  let senderAccount = await readAccountFromFile(ACCOUNT1_PATH);
+  console.time("Hi");
+  var fromWallet = senderAccount;
+
+  var toWalletPublickKey = programAccount.publicKey;
+  // Construct my token class
+  var myMint = new web3.PublicKey("xxVzGsfDVaQvd5eTkCuyJFaAhTzDNAXnW49r5kNLKKN");//("My Mint Public Address");
+  var myToken = new splToken.Token(
+    connection,
+    myMint,
+    splToken.TOKEN_PROGRAM_ID,
+    fromWallet
+  );
+
+  // Create associated token accounts for my token if they don't exist yet
+  var fromTokenAccount = await myToken.getOrCreateAssociatedAccountInfo(
+    fromWallet.publicKey
+  )
+  var toTokenAccount = await myToken.getOrCreateAssociatedAccountInfo(
+    //toWallet.publicKey
+    toWalletPublickKey
+  )
+
+  // Add token transfer instructions to transaction
+  var transaction = new web3.Transaction()
+  .add(
+    splToken.Token.createTransferInstruction(
+      splToken.TOKEN_PROGRAM_ID,
+      fromTokenAccount.address,
+      toTokenAccount.address,
+      fromWallet.publicKey,
+      [],
+      10 //amount
+    )
+  );
+  // Sign transaction, broadcast, and confirm
+  var signature = await web3.sendAndConfirmTransaction(
+    connection,
+    transaction,
+    [fromWallet]
+  );
+
+  console.log("SUCCESS");
+
+}
+
+export async function sendTokenByMyContract(): Promise<void> {
+
+  // Construct wallet keypairs
+  let account1 = await readAccountFromFile(ACCOUNT1_PATH);
+
+  
+
+  
+
+  var data = createSayHelloInstructionData(1);
+
+  const instruction = new TransactionInstruction({
+    keys: [//{pubkey: greetedPubkey, isSigner: false, isWritable: true},
+      //{pubkey: sysvarClockPubKey, isSigner: false, isWritable: false},
+      {pubkey: account1.publicKey, isSigner: true, isWritable: true},
+      //{pubkey: payerAccount.publicKey, isSigner: true, isWritable: true},
+      //{pubkey: token_address, isSigner: false, isWritable: false},
+      //{pubkey: authorityAccount, isSigner:false, isWritable:false},
+      //{pubkey: programTokenAccount, isSigner:false, isWritable:false},
+      //{pubkey: userTokenAccount, isSigner:false, isWritable:false},
+    ],
+    programId,
+    data: data, // All instructions are hellos
+  });
+  console.log("SUCCESS");
+
+  var tx = new Transaction();
+  /*tx.add(SystemProgram.transfer({
+    fromPubkey: payerAccount.publicKey,
+    toPubkey: greetedPubkey,
+    lamports: 0.01 * LAMPORTS_PER_SOL,
+  }));*/
+  tx.add(instruction);
+  tx.recentBlockhash = (
+    await connection.getRecentBlockhash("max")
+  ).blockhash;
+  tx.feePayer = account1.publicKey;
+
+  tx.sign(account1);
+
+    await sendAndConfirmTransaction(
+      connection,
+      tx,
+      [account1],
+    );
+  
+}
+
+function createSayHelloInstructionData( type : number): Buffer {
+  const dataLayout = BufferLayout.struct([
+    BufferLayout.u8('instruction'),
+  ])
+
+  const data = Buffer.alloc(dataLayout.span);
+  dataLayout.encode({
+    instruction: type
+  }, data);
+  return data
+}
+
 /**
  * Say hello
  */
@@ -305,7 +446,7 @@ export async function sayHello(): Promise<void> {
   //let authorityAccount = new PublicKey('8kTX4Q4itv5hwTsMUkPjVF7ECDVxSCNssSHNGtfbb9Pn'); //
   let authorityAccount = new PublicKey('5g66nv9DQMRpxJeouFGr1497g4jVdnXeLowawzbkXxjb'); //
   let programTokenAccount = new PublicKey('69aSHjgpnP8w1JtdupamzVwM9Rjx1kKq69JCMxFCut6V')
-  let userAccount = await readAccountFromFile("/Users/jeffyin/breakthrough/solana/example-helloworld/keys/1a11oX3ak4hmeLrmaoaZdLY911hKHYjEYXxPd9LobVS.json");
+  let userAccount = await readAccountFromFile(ACCOUNT1_PATH);
   let userTokenAccount = new PublicKey('Aw34RrJ4vJ966Rgbya7ehSX2LoS2ueMCmGDZ7DztDrcq');
   console.log("userPubKey:", userAccount.publicKey.toBase58());
   //let fundPubkey = payerAccount.publicKey;
@@ -320,7 +461,8 @@ export async function sayHello(): Promise<void> {
       {pubkey: userTokenAccount, isSigner:false, isWritable:false},
     ],
     programId,
-    data: Buffer.alloc(0), // All instructions are hellos
+    //data: Buffer.alloc(0), // All instructions are hellos
+    data: createSayHelloInstructionData(1),
   });
 
   var tx = new Transaction();

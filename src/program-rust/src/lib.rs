@@ -8,6 +8,8 @@ where
     obj.hash(&mut hasher);
     hasher.finish()
 }
+pub mod instruction;
+use crate::instruction::HelloInstruction;
 
 
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -47,11 +49,21 @@ pub fn process_instruction(
     accounts: &[AccountInfo], // The account to say hello to
     _instruction_data: &[u8], // Ignored, all helloworld instructions are hellos
 ) -> ProgramResult {
-    //my_test1(program_id, accounts, _instruction_data);
-    my_test2(program_id, accounts, _instruction_data);
-    
+    //https://dev.to/cogoo/solana-how-to-send-custom-instructions-via-instruction-data-4g9g
+    let instruction = HelloInstruction::unpack(_instruction_data)?;
+    msg!("Instruction: {:?}", instruction);
+    match instruction {
+        HelloInstruction::SayHello =>{
+            my_test1(program_id, accounts, _instruction_data);
+        }
+        HelloInstruction::SayBye => {
+            my_test2(program_id, accounts, _instruction_data);      
+        }
+    }
+    msg!("End");
     Ok(())
 }
+
 
 // Sanity tests
 #[cfg(test)]
@@ -143,7 +155,23 @@ pub fn my_test1(
     _instruction_data: &[u8], // Ignored, all helloworld instructions are hellos
 ) -> ProgramResult {
     msg!("my_test1 Hello");
+
     
+    
+    /*let ix = spl_token::instruction::transfer(
+        spl_token_program.key,
+        source.key,
+        destination.key,
+        authority.key,
+        &[],
+        amount,
+    )?;
+    invoke_signed(
+        &ix,
+        &[source, destination, authority, token_program],
+        signers,
+    )*/
+
     Ok(())
 }
 

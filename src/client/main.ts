@@ -8,13 +8,15 @@ import {
   checkProgram,
   sendMoney,
   sendToken,
+  sendTokenByMyContract,
+  createTokenATA,
   sayHello,
   reportGreetings,
 } from './hello_world';
 
 async function main() {
-  await main1();
-  //await test1();
+  //await main1();
+  await test1();
   
 }
 
@@ -26,7 +28,19 @@ main().then(
   },
 );
 async function test1(): Promise<void>{
-  await sendToken();
+  //await sendToken();
+  //await createTokenATA();
+
+  // Establish connection to the cluster
+  await establishConnection();
+
+   // Determine who pays for the fees
+   await establishPayer();
+
+   // Check if the program has been deployed
+  await checkProgram();
+
+  await sendTokenByMyContract();
   console.log('Success');
 }
 
