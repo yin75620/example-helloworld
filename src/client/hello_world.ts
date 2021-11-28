@@ -372,6 +372,7 @@ export async function createTokenATA(): Promise<void>{
     [fromWallet]
   );
 
+  console.log("SIGNATURE", signature);
   console.log("SUCCESS");
 
 }
@@ -380,17 +381,36 @@ export async function sendTokenByMyContract(): Promise<void> {
 
   // Construct wallet keypairs
   let account1 = await readAccountFromFile(ACCOUNT1_PATH);
+  let programAccount = await readAccountFromFile(PROGRAM_KEYPAIR_PATH);
+
+  // Construct my token class
+  var myMint = new web3.PublicKey("xxVzGsfDVaQvd5eTkCuyJFaAhTzDNAXnW49r5kNLKKN");//("My Mint Public Address");
+  var myToken = new splToken.Token(
+    connection,
+    myMint,
+    splToken.TOKEN_PROGRAM_ID,
+    account1
+  );
+
+  // Create associated token accounts for my token if they don't exist yet
+  var account1TokenAccount = await myToken.getOrCreateAssociatedAccountInfo(
+    account1.publicKey
+  )
+  var programTokenAccount = await myToken.getOrCreateAssociatedAccountInfo(
+    //toWallet.publicKey
+    programAccount.publicKey
+  )
 
   
 
-  
-
-  var data = createSayHelloInstructionData(1);
+  var data = createSayHelloInstructionData(0);
 
   const instruction = new TransactionInstruction({
     keys: [//{pubkey: greetedPubkey, isSigner: false, isWritable: true},
       //{pubkey: sysvarClockPubKey, isSigner: false, isWritable: false},
       {pubkey: account1.publicKey, isSigner: true, isWritable: true},
+      {pubkey: account1TokenAccount.address, isSigner: false, isWritable: false},
+      {pubkey: account1TokenAccount.address, isSigner: false, isWritable: false},
       //{pubkey: payerAccount.publicKey, isSigner: true, isWritable: true},
       //{pubkey: token_address, isSigner: false, isWritable: false},
       //{pubkey: authorityAccount, isSigner:false, isWritable:false},
@@ -400,7 +420,7 @@ export async function sendTokenByMyContract(): Promise<void> {
     programId,
     data: data, // All instructions are hellos
   });
-  console.log("SUCCESS");
+  
 
   var tx = new Transaction();
   /*tx.add(SystemProgram.transfer({
@@ -412,16 +432,18 @@ export async function sendTokenByMyContract(): Promise<void> {
   tx.recentBlockhash = (
     await connection.getRecentBlockhash("max")
   ).blockhash;
-  tx.feePayer = account1.publicKey;
+  tx.feePayer = payerAccount.publicKey;
 
-  tx.sign(account1);
+  tx.sign(account1,payerAccount);
 
-    await sendAndConfirmTransaction(
-      connection,
-      tx,
-      [account1],
-    );
+  var signature =await sendAndConfirmTransaction(
+    connection,
+    tx,
+    [payerAccount,account1],
+  );
   
+  console.log("SIGNATURE", signature);
+  console.log("SUCCESS");
 }
 
 function createSayHelloInstructionData( type : number): Buffer {

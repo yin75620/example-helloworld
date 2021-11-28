@@ -156,21 +156,71 @@ pub fn my_test1(
 ) -> ProgramResult {
     msg!("my_test1 Hello");
 
+    let accounts_iter = &mut accounts.iter();
+
+    // Get the account to say hello to
+    let account1 = next_account_info(accounts_iter)?;
+
+    let spl_token_program = next_account_info(accounts_iter)?;
+
+    let sourceAccount = next_account_info(accounts_iter)?;
+
+    let authority = next_account_info(accounts_iter)?;
+
+    let program = next_account_info(accounts_iter)?;
     
+
+    msg!("account1:{}", account1.key);
+    msg!("spl_token_program:{}", spl_token_program.key);
+    msg!("sourceAccount:{}", sourceAccount.key);
+    msg!("authority:{}", authority.key);
+    msg!("program:{}", program.key);
     
-    /*let ix = spl_token::instruction::transfer(
+    //let (authority_key, bump_seed) = Pubkey::find_program_address(
+    //    &[&swap_account.key.to_bytes()[..]],
+    //    &spl_token_swap::id(),
+    //);
+    let (authority_key, bump_seed) = Pubkey::find_program_address(
+        &[&program.key.to_bytes()[..]],
+        &program.key,
+    );
+    //let signers = &[&[&b"escrow"[..], &[bump_seed]]];
+    
+    let program_bytes = program.key.to_bytes();
+    let authority_signature_seeds = [&program_bytes[..32], &[bump_seed]];
+    let signers = &[&authority_signature_seeds[..]];
+    
+    let ix = spl_token::instruction::transfer(
         spl_token_program.key,
-        source.key,
-        destination.key,
+        sourceAccount.key, //source
+        account1.key, //destination
         authority.key,
         &[],
-        amount,
+        10,
     )?;
     invoke_signed(
         &ix,
-        &[source, destination, authority, token_program],
+        &[sourceAccount.clone(), account1.clone(), authority.clone(), program.clone()],
         signers,
-    )*/
+    );
+
+    
+
+    /*let transfer_to_taker_ix = 
+    spl_token::instruction::transfer( 
+        token_program.key, 
+        pdas_temp_token_account.key, t
+        akers_token_to_receive_account.key, 
+        &pda, 
+        &[&pda], 1, )?;
+        msg!("Calling the token program to transfer tokens to the taker..."); 
+        invoke_signed( &transfer_to_taker_ix, 
+            &[ pdas_temp_token_account.clone(), 
+            takers_token_to_receive_account.clone(), 
+            pda_account.clone(), token_program.clone(), 
+            ], 
+            &[&[&b"escrow"[..], &[nonce]]], 
+        )?;*/
 
     Ok(())
 }
