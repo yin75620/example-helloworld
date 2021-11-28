@@ -47,6 +47,111 @@ pub fn process_instruction(
     accounts: &[AccountInfo], // The account to say hello to
     _instruction_data: &[u8], // Ignored, all helloworld instructions are hellos
 ) -> ProgramResult {
+    //my_test1(program_id, accounts, _instruction_data);
+    my_test2(program_id, accounts, _instruction_data);
+    
+    Ok(())
+}
+
+// Sanity tests
+#[cfg(test)]
+mod test {
+    use super::*;
+    use solana_program::clock::Epoch;
+    use std::mem;
+
+    #[test]
+    fn test_sanity() {
+        let program_id = Pubkey::default();
+        let key = Pubkey::default();
+        let mut lamports = 0;
+        let mut data = vec![0; mem::size_of::<u32>()];
+        let owner = Pubkey::default();
+        let account = AccountInfo::new(
+            &key,
+            false,
+            true,
+            &mut lamports,
+            &mut data,
+            &owner,
+            false,
+            Epoch::default(),
+        );
+        let instruction_data: Vec<u8> = Vec::new();
+
+        let accounts = vec![account];
+
+        assert_eq!(
+            GreetingAccount::try_from_slice(&accounts[0].data.borrow())
+                .unwrap()
+                .counter,
+            0
+        );
+        process_instruction(&program_id, &accounts, &instruction_data).unwrap();
+        assert_eq!(
+            GreetingAccount::try_from_slice(&accounts[0].data.borrow())
+                .unwrap()
+                .counter,
+            1
+        );
+        process_instruction(&program_id, &accounts, &instruction_data).unwrap();
+        assert_eq!(
+            GreetingAccount::try_from_slice(&accounts[0].data.borrow())
+                .unwrap()
+                .counter,
+            2
+        );
+    }
+}
+
+/// Transfers SPL Tokens
+pub fn transfer_spl_tokens<'a>(
+    source_info: &AccountInfo<'a>,
+    destination_info: &AccountInfo<'a>,
+    authority_info: &AccountInfo<'a>,
+    amount: u64,
+    spl_token_info: &AccountInfo<'a>,
+) -> ProgramResult {
+    let transfer_instruction = spl_token::instruction::transfer(
+        &spl_token::id(),
+        source_info.key,
+        destination_info.key,
+        authority_info.key,
+        &[],
+        amount,
+    )
+    .unwrap();
+
+    invoke(
+        &transfer_instruction,
+        &[
+            spl_token_info.clone(),
+            authority_info.clone(),
+            source_info.clone(),
+            destination_info.clone(),
+        ],
+    )?;
+
+    Ok(())
+}
+
+
+
+pub fn my_test1(
+    program_id: &Pubkey, // Public key of the account the hello world program was loaded into
+    accounts: &[AccountInfo], // The account to say hello to
+    _instruction_data: &[u8], // Ignored, all helloworld instructions are hellos
+) -> ProgramResult {
+    msg!("my_test1 Hello");
+    
+    Ok(())
+}
+
+pub fn my_test2(
+    program_id: &Pubkey, // Public key of the account the hello world program was loaded into
+    accounts: &[AccountInfo], // The account to say hello to
+    _instruction_data: &[u8], // Ignored, all helloworld instructions are hellos
+) -> ProgramResult{
     msg!("Hello World Rust program entrypoint");
 
     // Iterating accounts is safer then indexing
@@ -215,88 +320,6 @@ pub fn process_instruction(
     }
     
     
-
-    Ok(())
-}
-
-// Sanity tests
-#[cfg(test)]
-mod test {
-    use super::*;
-    use solana_program::clock::Epoch;
-    use std::mem;
-
-    #[test]
-    fn test_sanity() {
-        let program_id = Pubkey::default();
-        let key = Pubkey::default();
-        let mut lamports = 0;
-        let mut data = vec![0; mem::size_of::<u32>()];
-        let owner = Pubkey::default();
-        let account = AccountInfo::new(
-            &key,
-            false,
-            true,
-            &mut lamports,
-            &mut data,
-            &owner,
-            false,
-            Epoch::default(),
-        );
-        let instruction_data: Vec<u8> = Vec::new();
-
-        let accounts = vec![account];
-
-        assert_eq!(
-            GreetingAccount::try_from_slice(&accounts[0].data.borrow())
-                .unwrap()
-                .counter,
-            0
-        );
-        process_instruction(&program_id, &accounts, &instruction_data).unwrap();
-        assert_eq!(
-            GreetingAccount::try_from_slice(&accounts[0].data.borrow())
-                .unwrap()
-                .counter,
-            1
-        );
-        process_instruction(&program_id, &accounts, &instruction_data).unwrap();
-        assert_eq!(
-            GreetingAccount::try_from_slice(&accounts[0].data.borrow())
-                .unwrap()
-                .counter,
-            2
-        );
-    }
-}
-
-/// Transfers SPL Tokens
-pub fn transfer_spl_tokens<'a>(
-    source_info: &AccountInfo<'a>,
-    destination_info: &AccountInfo<'a>,
-    authority_info: &AccountInfo<'a>,
-    amount: u64,
-    spl_token_info: &AccountInfo<'a>,
-) -> ProgramResult {
-    let transfer_instruction = spl_token::instruction::transfer(
-        &spl_token::id(),
-        source_info.key,
-        destination_info.key,
-        authority_info.key,
-        &[],
-        amount,
-    )
-    .unwrap();
-
-    invoke(
-        &transfer_instruction,
-        &[
-            spl_token_info.clone(),
-            authority_info.clone(),
-            source_info.clone(),
-            destination_info.clone(),
-        ],
-    )?;
 
     Ok(())
 }

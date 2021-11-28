@@ -13,8 +13,8 @@ import {
 } from './hello_world';
 
 async function main() {
-  //await main1();
-  await test1();
+  await main1();
+  //await test1();
   
 }
 

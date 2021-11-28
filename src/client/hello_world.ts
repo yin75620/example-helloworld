@@ -268,6 +268,7 @@ export async function sendToken(): Promise<void> {
       toWalletPublickKey
     )
     console.timeLog("Hi");
+    console.log(splToken.TOKEN_PROGRAM_ID);
     // Add token transfer instructions to transaction
     var transaction = new web3.Transaction()
       .add(
